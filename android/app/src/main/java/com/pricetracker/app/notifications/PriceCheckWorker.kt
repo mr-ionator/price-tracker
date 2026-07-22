@@ -17,6 +17,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -28,7 +29,35 @@ import java.util.concurrent.TimeUnit
 const val CHANNEL_ID = "price_alerts"
 private const val PERIODIC_WORK = "price-check-periodic"
 private const val IMMEDIATE_WORK = "price-check-now"
-private const val CHECK_INTERVAL_HOURS = 3L
+
+private const val PREFS_NAME = "price_tracker_settings"
+private const val KEY_INTERVAL_MINUTES = "check_interval_minutes"
+
+const val DEFAULT_CHECK_INTERVAL_MINUTES = 180
+
+data class CheckIntervalOption(val label: String, val minutes: Int)
+
+/** Selectable background-check frequencies. 15 min is WorkManager's floor. */
+val CHECK_INTERVAL_OPTIONS = listOf(
+    CheckIntervalOption("Every 15 minutes", 15),
+    CheckIntervalOption("Every 30 minutes", 30),
+    CheckIntervalOption("Every hour", 60),
+    CheckIntervalOption("Every 3 hours", 180),
+    CheckIntervalOption("Every 6 hours", 360),
+    CheckIntervalOption("Every 12 hours", 720),
+    CheckIntervalOption("Once a day", 1440),
+)
+
+fun getCheckIntervalMinutes(context: Context): Int =
+    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getInt(KEY_INTERVAL_MINUTES, DEFAULT_CHECK_INTERVAL_MINUTES)
+
+/** Persist a new interval and re-schedule the background job to match. */
+fun applyCheckIntervalMinutes(context: Context, minutes: Int) {
+    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit().putInt(KEY_INTERVAL_MINUTES, minutes).apply()
+    reschedulePeriodicChecks(context)
+}
 
 fun ensureNotificationChannel(context: Context) {
     val channel = NotificationChannel(
@@ -43,15 +72,26 @@ private fun networkConstraint() = Constraints.Builder()
     .setRequiredNetworkType(NetworkType.CONNECTED)
     .build()
 
-/** Scrape every tracked price in the background a few times a day. */
-fun schedulePeriodicChecks(context: Context) {
-    val request = PeriodicWorkRequestBuilder<PriceCheckWorker>(
-        CHECK_INTERVAL_HOURS, TimeUnit.HOURS,
+private fun periodicRequest(context: Context): PeriodicWorkRequest =
+    PeriodicWorkRequestBuilder<PriceCheckWorker>(
+        getCheckIntervalMinutes(context).toLong(), TimeUnit.MINUTES,
     ).setConstraints(networkConstraint()).build()
+
+/** Schedule background checks if not already scheduled (called on app start). */
+fun schedulePeriodicChecks(context: Context) {
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
         PERIODIC_WORK,
         ExistingPeriodicWorkPolicy.KEEP,
-        request,
+        periodicRequest(context),
+    )
+}
+
+/** Replace the scheduled job after the user changes the interval. */
+fun reschedulePeriodicChecks(context: Context) {
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        PERIODIC_WORK,
+        ExistingPeriodicWorkPolicy.UPDATE,
+        periodicRequest(context),
     )
 }
 

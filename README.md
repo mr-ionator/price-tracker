@@ -19,8 +19,9 @@ account, and nothing to configure**. Install it and it just works.
    shops.
 2. The app fetches each page directly from the phone, extracts the price, and
    stores it in a local database with full price history.
-3. A background job re-checks every tracked price a few times a day (while
-   you're online). You can also pull a fresh check anytime.
+3. A background job re-checks every tracked price on a schedule you choose in
+   Settings (from every 15 minutes up to once a day), while you're online. You
+   can also pull a fresh check anytime.
 4. When a price **changes** or drops **below a target you set**, the app raises
    a **local notification** — no cloud service involved.
 
@@ -58,8 +59,8 @@ app is closed. That's the entire setup.
   target-price **alerts** (you're notified when any shop hits the target;
   you won't be re-notified while it stays low, and the alert re-arms if the
   price climbs back up).
-- **Settings**: a "Check all prices now" button and a reminder to allow
-  notifications.
+- **Settings**: choose how often prices are checked in the background (every
+  15 minutes up to once a day), plus a "Check all prices now" button.
 
 ## Project layout
 
@@ -89,6 +90,6 @@ cd android
   day and spaces requests out to stay polite.
 - Amazon/Currys occasionally serve bot-check pages; those checks are skipped
   (error stored, visible in the product detail) and retried next cycle.
-- Background timing follows Android's WorkManager, so alerts arrive within the
-  next check cycle rather than instantly. Use **Check all prices now** for an
-  immediate refresh.
+- Background timing follows Android's WorkManager (15-minute minimum, and it
+  may batch work), so alerts arrive within the next check cycle rather than
+  instantly. Use **Check all prices now** for an immediate refresh.
