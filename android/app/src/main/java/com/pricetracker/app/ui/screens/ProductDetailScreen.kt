@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.pricetracker.app.data.PricePoint
 import com.pricetracker.app.data.ProductDetail
 import com.pricetracker.app.data.Repository
+import com.pricetracker.app.data.formatTimestamp
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,7 +161,7 @@ fun ProductDetailScreen(productId: Int, onBack: () -> Unit) {
                         }
                         tracked.lastCheckedAt?.let {
                             Text(
-                                "Checked ${prettyTimestamp(it)}",
+                                "Checked ${formatTimestamp(it)}",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
@@ -260,9 +261,6 @@ fun ProductDetailScreen(productId: Int, onBack: () -> Unit) {
         }
     }
 }
-
-private fun prettyTimestamp(iso: String): String =
-    iso.take(16).replace('T', ' ')
 
 @Composable
 private fun PriceChart(points: List<PricePoint>) {

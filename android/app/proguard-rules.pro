@@ -1,7 +1,1 @@
-# Keep kotlinx.serialization generated serializers
--keepclassmembers class com.pricetracker.app.data.** {
-    *** Companion;
-}
--keepclasseswithmembers class com.pricetracker.app.data.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
+# Jsoup keeps its own classes; nothing app-specific to keep here.

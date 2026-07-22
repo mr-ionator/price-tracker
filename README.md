@@ -1,129 +1,94 @@
 # Price Tracker
 
-Track product prices across **amazon.ie**, **paradigit.ie** and **currys.ie**,
-set target-price alerts, and get notified of every price change by
-**push notification** and/or **email**.
+A standalone **Android app** that tracks product prices across **amazon.ie**,
+**paradigit.ie** and **currys.ie**, lets you set target-price alerts, and
+notifies you of every price change — all **on the phone**, with **no server, no
+account, and nothing to configure**. Install it and it just works.
 
-Two parts:
-
-| Part | Tech | Where it runs |
-|---|---|---|
-| [`backend/`](backend) | Python · FastAPI · SQLite | Docker container on your WSL2 machine |
-| [`android/`](android) | Kotlin · Jetpack Compose | Your Android phone (built with Android Studio) |
+| | |
+|---|---|
+| Platform | Android 8.0+ (API 26) |
+| UI | Kotlin · Jetpack Compose · Material 3 |
+| Storage | Room (local SQLite on the device) |
+| Fetching | OkHttp + Jsoup, on-device |
+| Background | WorkManager |
 
 ## How it works
 
-1. You add a product in the Android app with its URL on one or more of the
-   supported shops.
-2. The backend scrapes each URL on a schedule (hourly by default), keeps a
-   price history, and records an event whenever a price changes or drops
-   below one of your alert targets.
-3. Events reach you three ways:
-   - **App push notifications** — the app polls the backend in the background
-     (WorkManager, ~15 min) and raises Android notifications. Zero setup.
-   - **Email** — configure SMTP in `.env`.
-   - **Instant push via [ntfy](https://ntfy.sh)** *(optional)* — set a topic in
-     `.env`, subscribe to it in the ntfy app, get pushes within seconds.
+1. Add a product and paste its page URL from one or more of the supported
+   shops.
+2. The app fetches each page directly from the phone, extracts the price, and
+   stores it in a local database with full price history.
+3. A background job re-checks every tracked price a few times a day (while
+   you're online). You can also pull a fresh check anytime.
+4. When a price **changes** or drops **below a target you set**, the app raises
+   a **local notification** — no cloud service involved.
 
-Scrapers use site-specific selectors first and fall back to schema.org
-JSON-LD / metadata parsing, so minor site redesigns usually don't break them.
-Amazon and Currys run aggressive bot protection; if a check is blocked the
-error is stored per-URL and shown in the app, and the next scheduled check
-retries automatically.
+Price extraction uses site-specific selectors first (e.g. the Amazon buy-box),
+then falls back to schema.org **JSON-LD** and price metadata, so minor site
+redesigns usually don't break it. Amazon and Currys run bot protection; if a
+check is blocked, the error is stored per-URL and shown in the app, and the
+next scheduled check retries automatically.
 
-## 1. Run the backend (Docker on WSL2)
+Everything — products, price history, alerts, notification history — lives in
+the app's private storage on the device and never leaves the phone.
 
-Requires Docker Desktop with WSL integration (or any Docker engine in WSL).
+## Build & install
+
+Open the [`android/`](android) folder in Android Studio (Hedgehog or newer,
+JDK 17), let it sync, and press **Run** with your phone connected — or build an
+APK from the command line:
 
 ```bash
-cp .env.example .env        # optional: fill in SMTP / ntfy settings
-docker compose up -d --build
-curl http://localhost:8000/health
+cd android
+./gradlew assembleDebug
+# APK at android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The SQLite database lives in the `pricetracker-data` volume and survives
-rebuilds. API docs are served at <http://localhost:8000/docs>.
+Install the APK on your phone (`adb install app-debug.apk`, or copy it over and
+open it). On first launch, allow notifications so alerts can reach you when the
+app is closed. That's the entire setup.
 
-### Configuration (`.env`)
+## Using it
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `CHECK_INTERVAL_MINUTES` | `60` | How often all prices are re-checked |
-| `SCRAPE_DELAY_SECONDS` | `5` | Pause between scrapes in one run |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | – | Outgoing mail server (for Gmail use an [App Password](https://myaccount.google.com/apppasswords)) |
-| `ALERT_EMAIL_TO` | – | Where alert emails go; empty disables email |
-| `NTFY_SERVER` / `NTFY_TOPIC` | `https://ntfy.sh` / – | ntfy instant push; empty topic disables it |
+- **Add a product** (＋): give it a name and paste product-page URLs from
+  amazon.ie / paradigit.ie / currys.ie. The first prices are fetched
+  immediately.
+- **Product detail**: per-shop current prices, a price-history chart, and
+  target-price **alerts** (you're notified when any shop hits the target;
+  you won't be re-notified while it stays low, and the alert re-arms if the
+  price climbs back up).
+- **Settings**: a "Check all prices now" button and a reminder to allow
+  notifications.
 
-## 2. Reach the backend from your phone
+## Project layout
 
-WSL2 has its own virtual network, so a phone on your Wi-Fi cannot reach it
-directly. Two options:
-
-**Option A — mirrored networking (Windows 11 22H2+, easiest).**
-Add to `%UserProfile%\.wslconfig` on Windows, then run `wsl --shutdown`:
-
-```ini
-[wsl2]
-networkingMode=mirrored
 ```
-
-The WSL container now listens on your PC's LAN IP directly
-(`ipconfig` → e.g. `192.168.1.50`).
-
-**Option B — port forwarding.** In an *administrator* PowerShell:
-
-```powershell
-netsh interface portproxy add v4tov4 listenport=8000 listenaddress=0.0.0.0 connectport=8000 connectaddress=(wsl hostname -I).Trim()
-New-NetFirewallRule -DisplayName "Price Tracker 8000" -Direction Inbound -LocalPort 8000 -Protocol TCP -Action Allow
+android/app/src/main/java/com/pricetracker/app/
+├── data/
+│   ├── db/            Room entities, DAOs, database
+│   ├── scrape/        On-device scrapers (Amazon/Paradigit/Currys/generic)
+│   ├── Models.kt      UI models
+│   └── Repository.kt  Scrape + store + evaluate alerts
+├── notifications/     WorkManager price-check worker + local notifications
+├── ui/screens/        Compose screens (list, add, detail, notifications, settings)
+└── MainActivity.kt    Navigation
 ```
-
-(Docker Desktop already publishes the port on `localhost`; the proxy + firewall
-rule expose it to the LAN. Re-run the `netsh` command if the WSL IP changes
-after a reboot.)
-
-Verify from the phone's browser: `http://<PC-LAN-IP>:8000/health`.
-
-## 3. Build & install the Android app
-
-1. Open the [`android/`](android) folder in Android Studio (Hedgehog or newer,
-   JDK 17). Let it sync; build with **Run** or `./gradlew assembleDebug`.
-2. On first launch, allow notifications, then open **Settings** in the app:
-   - Emulator: `http://10.0.2.2:8000`
-   - Real phone: `http://<PC-LAN-IP>:8000` (from step 2)
-   - Tap **Save & test connection**.
-3. Add a product: give it a name and paste its product-page URLs from
-   amazon.ie / paradigit.ie / currys.ie. Initial prices are fetched
-   immediately.
-4. Open a product to see per-site prices, the price history chart, and to set
-   a **target price alert**.
-
-## API overview
-
-| Method & path | Purpose |
-|---|---|
-| `GET /health` | Status + notification channel config |
-| `GET/POST /products` | List / create (creation scrapes immediately) |
-| `GET/DELETE /products/{id}` | Detail incl. price history / stop tracking |
-| `POST /products/{id}/refresh` | Re-check prices now |
-| `POST /products/{id}/alerts` | Set target price |
-| `DELETE /alerts/{id}`, `POST /alerts/{id}/toggle` | Manage alerts |
-| `GET /notifications` | Event history (`?undelivered_only=true` for the app poller) |
-| `POST /notifications/mark-delivered` | Ack delivered events |
 
 ## Development
 
 ```bash
-cd backend
-pip install -r requirements.txt pytest
-python -m pytest tests/          # 19 tests: parsers, API, alerts, delivery
-uvicorn app.main:app --reload    # run without Docker
+cd android
+./gradlew testDebugUnitTest   # unit tests for price parsing / JSON-LD extraction
+./gradlew assembleDebug       # build the debug APK
 ```
 
 ## Notes & limits
 
-- Scraping retail sites is for **personal use**; keep `CHECK_INTERVAL_MINUTES`
-  and `SCRAPE_DELAY_SECONDS` polite so you don't hammer the shops.
+- Scraping retail sites is for **personal use**; the app checks a few times a
+  day and spaces requests out to stay polite.
 - Amazon/Currys occasionally serve bot-check pages; those checks are skipped
   (error stored, visible in the product detail) and retried next cycle.
-- App push latency is bounded by Android's 15-minute WorkManager minimum; use
-  ntfy for near-instant alerts.
+- Background timing follows Android's WorkManager, so alerts arrive within the
+  next check cycle rather than instantly. Use **Check all prices now** for an
+  immediate refresh.

@@ -1,13 +1,3 @@
-# Python
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-*.db
-
-# Env / secrets
-.env
-
 # Android / Gradle
 android/.gradle/
 android/build/

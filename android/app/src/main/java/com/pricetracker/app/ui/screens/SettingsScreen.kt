@@ -8,46 +8,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.pricetracker.app.data.Repository
-import com.pricetracker.app.data.SettingsStore
-import kotlinx.coroutines.launch
+import com.pricetracker.app.notifications.enqueueImmediateCheck
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val settings = remember { SettingsStore(context) }
-    val repository = remember { Repository(context) }
-    val scope = rememberCoroutineScope()
-
-    var url by remember { mutableStateOf("") }
-    var status by remember { mutableStateOf<String?>(null) }
-    var statusIsError by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { url = settings.currentBackendUrl() }
+    var checkStarted by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text("Settings & about") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -61,53 +49,49 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("Backend server", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "URL of the price-tracker backend. Use http://10.0.2.2:8000 on the " +
-                    "Android emulator, or http://<your-PC's-LAN-IP>:8000 from a real " +
-                    "phone on the same Wi-Fi.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            OutlinedTextField(
-                value = url,
-                onValueChange = { url = it },
-                label = { Text("Backend URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("How it works", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Everything runs on this phone. Prices are fetched directly from " +
+                            "amazon.ie, paradigit.ie and currys.ie and stored locally — no " +
+                            "account, no server, nothing to configure.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        "Prices are re-checked automatically a few times a day while you have " +
+                            "an internet connection. When a price changes or drops below a " +
+                            "target you set, you'll get a notification.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
             Button(
                 onClick = {
-                    scope.launch {
-                        settings.setBackendUrl(url)
-                        status = try {
-                            val health = repository.health()
-                            statusIsError = false
-                            "Connected ✓  (checks every ${health.checkIntervalMinutes} min, " +
-                                "email ${if (health.emailConfigured) "on" else "off"}, " +
-                                "ntfy ${if (health.ntfyConfigured) "on" else "off"})"
-                        } catch (e: Exception) {
-                            statusIsError = true
-                            "Connection failed: ${e.message}"
-                        }
-                    }
+                    enqueueImmediateCheck(context)
+                    checkStarted = true
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Save & test connection") }
+            ) { Text("Check all prices now") }
 
-            status?.let {
+            if (checkStarted) {
                 Text(
-                    it,
-                    color = if (statusIsError) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary,
+                    "Started a check in the background. Prices and any alerts will update " +
+                        "shortly.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
             Text(
-                "Notifications are checked in the background roughly every 15 minutes. " +
-                    "For instant pushes and email alerts, configure ntfy or SMTP in the " +
-                    "backend's .env file.",
+                "Tip: allow notifications so price alerts can reach you when the app is " +
+                    "closed.",
                 style = MaterialTheme.typography.bodySmall,
             )
         }

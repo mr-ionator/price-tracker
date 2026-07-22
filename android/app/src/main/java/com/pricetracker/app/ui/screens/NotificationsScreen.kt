@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pricetracker.app.data.AppNotification
 import com.pricetracker.app.data.Repository
+import com.pricetracker.app.data.formatTimestamp
 import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,7 +91,7 @@ fun NotificationsScreen(onBack: () -> Unit) {
                                 )
                                 Text(item.body, style = MaterialTheme.typography.bodySmall)
                                 Text(
-                                    item.createdAt.take(16).replace('T', ' '),
+                                    formatTimestamp(item.createdAt),
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                             }

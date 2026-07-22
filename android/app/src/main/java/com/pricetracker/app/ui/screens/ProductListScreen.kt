@@ -58,7 +58,7 @@ fun ProductListScreen(
         try {
             products = repository.listProducts()
         } catch (e: Exception) {
-            error = "Cannot reach backend: ${e.message}"
+            error = "Something went wrong: ${e.message}"
         }
     }
 
