@@ -1,9 +1,19 @@
 # Price Tracker
 
-A standalone **Android app** that tracks product prices across **amazon.ie**,
-**paradigit.ie** and **currys.ie**, lets you set target-price alerts, and
-notifies you of every price change — all **on the phone**, with **no server, no
-account, and nothing to configure**. Install it and it just works.
+Track product prices across **amazon.ie**, **paradigit.ie** and **currys.ie**,
+set target-price alerts, and get notified of every price change. It comes in two
+independent, fully self-contained flavours — pick whichever suits you:
+
+- **[Android app](android)** — runs on your phone.
+- **[Browser extension](extension)** — runs in Chrome/Edge.
+
+Both store everything **locally** (on the phone / in the browser) and fetch
+prices themselves: **no server, no account, nothing to configure**.
+
+## Android app
+
+A standalone app that keeps all data **on the phone**. Install it and it just
+works.
 
 | | |
 |---|---|
@@ -84,7 +94,7 @@ cd android
 ./gradlew assembleDebug       # build the debug APK
 ```
 
-## Notes & limits
+## Notes & limits (Android)
 
 - Scraping retail sites is for **personal use**; the app checks a few times a
   day and spaces requests out to stay polite.
@@ -93,3 +103,67 @@ cd android
 - Background timing follows Android's WorkManager (15-minute minimum, and it
   may batch work), so alerts arrive within the next check cycle rather than
   instantly. Use **Check all prices now** for an immediate refresh.
+
+---
+
+# Browser extension
+
+A Manifest V3 extension for **Chrome / Edge** that does the same job in your
+browser. All data lives in `chrome.storage.local` — **no server, no account**.
+Because an extension isn't bound by the browser's CORS rules (a plain website
+would be), it can fetch the shops' pages itself.
+
+It gives you two surfaces over the same local data:
+
+- **Popup** (toolbar icon): a **Track this page** button that reads the price
+  off the shop tab you're on, a quick list of tracked products, and buttons to
+  check now or open the dashboard.
+- **Dashboard** (a full page bundled in the extension, opened in its own tab):
+  add products by URL, see per-shop prices and **price-history charts**, manage
+  **target-price alerts**, choose the **check frequency**, and view recent
+  activity.
+
+A background **service worker** re-checks prices on your chosen schedule (via
+`chrome.alarms`) and raises desktop **notifications** for price changes and
+alerts — even when no tab is open.
+
+### Install (unpacked)
+
+1. Open `chrome://extensions` (or `edge://extensions`).
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select the [`extension/`](extension) folder.
+4. Pin the Price Tracker icon, and allow notifications if prompted.
+
+### Using it
+
+- On an amazon.ie / paradigit.ie / currys.ie **product page**, click the
+  toolbar icon → **Track this page** (reads the live, rendered price).
+- Or open the **dashboard** and add a product by pasting its URL(s).
+- Set a **target price** on any product; you'll be notified when any shop hits
+  it (and it re-arms if the price climbs back up).
+- Change the background **check frequency** in the dashboard (15 minutes → once
+  a day; 15 min is the browser's alarm minimum).
+
+### Layout
+
+```
+extension/
+├── manifest.json     MV3 manifest (storage, alarms, notifications, scripting)
+├── background.js      Service worker: scheduled checks + notifications
+├── popup.html/.js/.css        Toolbar popup
+├── dashboard.html/.js/.css    Full-page local dashboard
+└── lib/
+    ├── pricing.js     Price parsing: JSON-LD / metadata / site selectors
+    ├── store.js       chrome.storage.local data layer
+    └── checker.js     Fetch + compare prices, evaluate alerts
+```
+
+### Notes & limits (extension)
+
+- The popup's **Track this page** reads the live rendered DOM, so it captures
+  prices even on JS-heavy pages. Background re-checks use a plain `fetch`, which
+  relies on the price being in the page's HTML/JSON-LD — for some Amazon/Currys
+  pages that means a re-check may not find a price (stored as an error, retried
+  next cycle) even though the initial capture worked.
+- Data lives in this browser profile only; it doesn't sync across machines.
+- Targets Chromium browsers (Chrome/Edge). Firefox would need minor tweaks.

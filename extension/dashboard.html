@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Price Tracker</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="topbar">
+        <h1>Price Tracker</h1>
+        <div class="actions">
+          <span id="status" class="status"></span>
+          <button id="checkAll" class="btn">Check all now</button>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Track a product</h2>
+        <p class="muted">
+          Paste the product-page URL from amazon.ie, paradigit.ie and/or currys.ie.
+          At least one is required.
+        </p>
+        <label class="field">
+          <span>Product name</span>
+          <input id="newName" type="text" placeholder="e.g. Dell 27&quot; Monitor" />
+        </label>
+        <div id="urlFields"></div>
+        <div class="row">
+          <button id="addUrlField" class="btn ghost">Add another URL</button>
+          <button id="addProduct" class="btn primary">Start tracking</button>
+        </div>
+        <p id="addStatus" class="status"></p>
+      </section>
+
+      <section id="products"></section>
+
+      <section class="card">
+        <h2>Check frequency</h2>
+        <p class="muted">
+          How often prices are re-checked in the background. Shorter intervals update
+          sooner but use more battery and data. (Minimum 15 minutes.)
+        </p>
+        <div id="intervalOptions" class="options"></div>
+      </section>
+
+      <section class="card">
+        <h2>Recent activity</h2>
+        <div id="log" class="log"></div>
+      </section>
+
+      <footer class="foot muted">
+        Everything is stored in your browser. No account, no server.
+      </footer>
+    </div>
+
+    <script type="module" src="dashboard.js"></script>
+  </body>
+</html>

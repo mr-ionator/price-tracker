@@ -1,0 +1,274 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f0f2f5;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --accent: #1b7f4b;
+  --accent-weak: #e4f3ea;
+  --error: #c0341d;
+  --border: #e2e4e8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181b;
+    --fg: #eceef1;
+    --muted: #9aa0a8;
+    --card: #232529;
+    --accent: #4ccf8b;
+    --accent-weak: #1f3a2c;
+    --error: #ff7a66;
+    --border: #34373d;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+.wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.topbar h1 {
+  font-size: 22px;
+  margin: 0;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+h3 {
+  font-size: 16px;
+  margin: 0;
+}
+h4 {
+  font-size: 14px;
+  margin: 12px 0 6px;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 13px;
+}
+.tiny {
+  font-size: 11px;
+}
+.status {
+  font-size: 13px;
+  color: var(--accent);
+  min-height: 1em;
+}
+
+button {
+  font: inherit;
+}
+.btn {
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  padding: 8px 12px;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn.tiny {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.btn.danger {
+  color: var(--error);
+}
+
+.field {
+  display: block;
+  margin: 10px 0;
+}
+.field > span {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.field-input,
+input[type="text"],
+input[type="url"],
+input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.url-input {
+  margin-bottom: 8px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.row .field-input {
+  flex: 1;
+}
+
+.product-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.product-actions {
+  display: flex;
+  gap: 6px;
+}
+.url-block {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.url-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.url-head .site {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.url-head .price {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 18px;
+}
+.url-meta {
+  font-size: 12px;
+  margin-top: 2px;
+}
+.err {
+  color: var(--error);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.chart {
+  width: 100%;
+  height: 120px;
+  margin-top: 10px;
+}
+
+.alerts {
+  margin-top: 8px;
+}
+.alert-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+.alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 22px;
+  transition: 0.2s;
+}
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.switch input:checked + .slider {
+  background: var(--accent);
+}
+.switch input:checked + .slider::before {
+  transform: translateX(18px);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.log-row {
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+}
+.log-row:first-child {
+  border-top: none;
+}
+.log-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+.foot {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 8px;
+}
