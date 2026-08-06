@@ -16,6 +16,17 @@
     "https://*.paradigit.ie/*",
     "https://*.currys.ie/*"
   ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.amazon.ie/*",
+        "https://*.paradigit.ie/*",
+        "https://*.currys.ie/*"
+      ],
+      "js": ["extract-core.js", "capture.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"

@@ -1,7 +1,12 @@
 // Service worker: schedules periodic price checks, handles requests from the
 // popup/dashboard, and raises desktop notifications for price changes/alerts.
 
-import { checkAllProducts, checkProduct, evaluateProduct } from "./lib/checker.js";
+import {
+  applyCapturedPrice,
+  checkAllProducts,
+  checkProduct,
+  evaluateProduct,
+} from "./lib/checker.js";
 import { getSettings } from "./lib/store.js";
 
 const ALARM = "priceCheck";
@@ -54,6 +59,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ ok: true, count: events.length });
       } else if (message.type === "evaluateProduct") {
         const events = await evaluateProduct(message.productId);
+        raiseNotifications(events);
+        sendResponse({ ok: true, count: events.length });
+      } else if (message.type === "capturedPrice") {
+        const events = await applyCapturedPrice(message);
         raiseNotifications(events);
         sendResponse({ ok: true, count: events.length });
       } else {

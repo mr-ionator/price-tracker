@@ -127,6 +127,24 @@ A background **service worker** re-checks prices on your chosen schedule (via
 `chrome.alarms`) and raises desktop **notifications** for price changes and
 alerts — even when no tab is open.
 
+### Getting Amazon & Currys prices reliably
+
+Amazon and Currys don't expose prices to a plain background `fetch` — Currys is
+bot-walled (returns 403) and Amazon renders prices with JavaScript. So the
+extension reads prices from **real, rendered pages** two ways:
+
+- **Passively, as you browse** — a content script on the three shops reads the
+  price whenever you open a product page you're tracking and updates it
+  silently. Invisible, instant, and immune to bot checks (it's your own
+  browsing).
+- **On the schedule** — for anything not refreshed by browsing, the service
+  worker opens each URL in a **hidden, minimized background window**, lets it
+  fully render, scrapes the price, and closes it. Paradigit/generic URLs skip
+  this and use a fast `fetch` first (they ship the price in HTML).
+
+The trade-off: scheduled checks briefly open a background window per cycle —
+Manifest V3 has no fully invisible way to render a third-party page.
+
 ### Install (unpacked)
 
 1. Open `chrome://extensions` (or `edge://extensions`).
@@ -150,20 +168,21 @@ alerts — even when no tab is open.
 extension/
 ├── manifest.json     MV3 manifest (storage, alarms, notifications, scripting)
 ├── background.js      Service worker: scheduled checks + notifications
+├── extract-core.js    Shared in-page extractor (content script + injected)
+├── capture.js         Content script: capture prices as you browse
 ├── popup.html/.js/.css        Toolbar popup
 ├── dashboard.html/.js/.css    Full-page local dashboard
 └── lib/
     ├── pricing.js     Price parsing: JSON-LD / metadata / site selectors
     ├── store.js       chrome.storage.local data layer
-    └── checker.js     Fetch + compare prices, evaluate alerts
+    └── checker.js     Render/fetch prices, compare, evaluate alerts
 ```
 
 ### Notes & limits (extension)
 
-- The popup's **Track this page** reads the live rendered DOM, so it captures
-  prices even on JS-heavy pages. Background re-checks use a plain `fetch`, which
-  relies on the price being in the page's HTML/JSON-LD — for some Amazon/Currys
-  pages that means a re-check may not find a price (stored as an error, retried
-  next cycle) even though the initial capture worked.
+- Scheduled checks briefly open a **hidden background window** to render
+  Amazon/Currys pages (see above). If you'd rather avoid that entirely, the
+  passive "update as you browse" capture keeps visited products fresh on its
+  own — you'd just miss auto-updates for products you don't open.
 - Data lives in this browser profile only; it doesn't sync across machines.
 - Targets Chromium browsers (Chrome/Edge). Firefox would need minor tweaks.

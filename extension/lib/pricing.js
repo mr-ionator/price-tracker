@@ -33,6 +33,17 @@ export function siteFromUrl(url) {
   return "generic";
 }
 
+/** Origin + path, lowercased, no trailing slash — for matching tracked URLs
+ *  captured while browsing (query strings and fragments vary run to run). */
+export function normalizeUrl(url) {
+  try {
+    const u = new URL(url);
+    return (u.origin + u.pathname).replace(/\/+$/, "").toLowerCase();
+  } catch (_) {
+    return String(url).toLowerCase();
+  }
+}
+
 /** Walk arbitrary JSON-LD looking for an Offer/AggregateOffer price. */
 export function offerPriceFromJson(node) {
   if (Array.isArray(node)) {
