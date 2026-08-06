@@ -37,9 +37,15 @@ works.
 
 Price extraction uses site-specific selectors first (e.g. the Amazon buy-box),
 then falls back to schema.org **JSON-LD** and price metadata, so minor site
-redesigns usually don't break it. Amazon and Currys run bot protection; if a
-check is blocked, the error is stored per-URL and shown in the app, and the
-next scheduled check retries automatically.
+redesigns usually don't break it.
+
+Amazon (JavaScript-rendered) and Currys (bot-walled to plain HTTP) don't return
+a price to a bare HTTP fetch, so for those the app loads the page in a **hidden
+off-screen WebView**, lets it render, and reads the price from the live DOM —
+the on-device equivalent of a real browser visit. Paradigit/generic URLs use
+the fast OkHttp fetch and only fall back to the WebView if that fails. If a
+check still can't get a price, the error is stored per-URL and shown in the
+app, and the next scheduled check retries.
 
 Everything — products, price history, alerts, notification history — lives in
 the app's private storage on the device and never leaves the phone.
@@ -78,7 +84,7 @@ app is closed. That's the entire setup.
 android/app/src/main/java/com/pricetracker/app/
 ├── data/
 │   ├── db/            Room entities, DAOs, database
-│   ├── scrape/        On-device scrapers (Amazon/Paradigit/Currys/generic)
+│   ├── scrape/        Scrapers + WebView renderer + PriceFetcher strategy
 │   ├── Models.kt      UI models
 │   └── Repository.kt  Scrape + store + evaluate alerts
 ├── notifications/     WorkManager price-check worker + local notifications
@@ -96,10 +102,11 @@ cd android
 
 ## Notes & limits (Android)
 
-- Scraping retail sites is for **personal use**; the app checks a few times a
-  day and spaces requests out to stay polite.
-- Amazon/Currys occasionally serve bot-check pages; those checks are skipped
-  (error stored, visible in the product detail) and retried next cycle.
+- Scraping retail sites is for **personal use**; the app checks on your chosen
+  interval and spaces requests out to stay polite.
+- Amazon/Currys are read via a hidden WebView (see above); this uses more time
+  and battery than a plain fetch. Currys' bot protection may still occasionally
+  challenge even a WebView — those checks store an error and retry next cycle.
 - Background timing follows Android's WorkManager (15-minute minimum, and it
   may batch work), so alerts arrive within the next check cycle rather than
   instantly. Use **Check all prices now** for an immediate refresh.

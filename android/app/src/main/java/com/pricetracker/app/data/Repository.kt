@@ -7,7 +7,7 @@ import com.pricetracker.app.data.db.NotificationEntity
 import com.pricetracker.app.data.db.PricePointEntity
 import com.pricetracker.app.data.db.ProductEntity
 import com.pricetracker.app.data.db.TrackedUrlEntity
-import com.pricetracker.app.data.scrape.PriceScraper
+import com.pricetracker.app.data.scrape.PriceFetcher
 import com.pricetracker.app.data.scrape.siteForUrl
 import kotlin.math.abs
 import kotlinx.coroutines.delay
@@ -18,7 +18,7 @@ import kotlinx.coroutines.delay
  */
 class Repository(context: Context) {
     private val db = AppDatabase.get(context)
-    private val scraper = PriceScraper()
+    private val fetcher = PriceFetcher(context)
 
     private val productDao = db.productDao()
     private val urlDao = db.urlDao()
@@ -117,7 +117,7 @@ class Repository(context: Context) {
     private suspend fun checkUrl(url: TrackedUrlEntity): List<AppNotification> {
         val events = mutableListOf<AppNotification>()
         try {
-            val result = scraper.scrape(url.url)
+            val result = fetcher.fetchPrice(url.site, url.url)
             urlDao.update(url.copy(lastCheckedAt = System.currentTimeMillis(), lastError = null))
             val previous = priceDao.latest(url.id)
             if (previous == null || abs(previous.price - result.price) >= PRICE_EPSILON) {
